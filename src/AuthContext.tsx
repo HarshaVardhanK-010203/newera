@@ -17,7 +17,7 @@ import {
 } from './firebase';
 
 // Since we may write to Firestore, import its subcomponents
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 
 interface AuthContextType {
   user: any; // Firebase user or mock user
@@ -94,82 +94,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize: listen for Auth State
   useEffect(() => {
-    let unsubscribe = () => {};
+    let unsubscribeAuth = () => {};
+    let unsubscribeProfile: (() => void) | null = null;
     
     if (auth) {
-      unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
         setLoading(true);
+        if (unsubscribeProfile) {
+          unsubscribeProfile();
+          unsubscribeProfile = null;
+        }
+
         if (currentUser) {
           setUser(currentUser);
           
-          // Try to retrieve existing profile from Firestore if Real Firebase or Standard Firebase DB is active
-          let fetchedProfile = null;
-          try {
-            const userDocRef = doc(db, 'users', currentUser.uid);
-            const docSnap = await getDoc(userDocRef);
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          
+          // Establish real-time Firestore subscriber listener!
+          unsubscribeProfile = onSnapshot(userDocRef, async (docSnap) => {
             if (docSnap.exists()) {
-              fetchedProfile = docSnap.data() as UserProfile;
-            }
-          } catch (e) {
-            console.warn("Could not retrieve profile from Firestore:", e);
-            try {
-              handleFirestoreError(e, OperationType.GET, `users/${currentUser.uid}`);
-            } catch (jsonErr) {
-              console.error(jsonErr);
-            }
-          }
-
-          // Also fetch/sync with Express backend to ensure matching server session State
-          try {
-            const apiRes = await fetch('/api/profile');
-            if (apiRes.ok) {
-              const apiProfile = await apiRes.json();
-              if (!fetchedProfile) {
-                fetchedProfile = apiProfile;
+              const fetched = docSnap.data() as UserProfile;
+              setProfile(fetched);
+              setLoading(false);
+            } else {
+              // Creating initial user profile
+              const initialProfile: UserProfile = {
+                uid: currentUser.uid,
+                name: currentUser.displayName || currentUser.email?.split('@')[0] || 'WebDevCadet',
+                username: currentUser.displayName || currentUser.email?.split('@')[0] || 'WebDevCadet',
+                email: currentUser.email || 'guest@webdevacademy.edu',
+                photoURL: currentUser.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.uid}`,
+                joinedDate: new Date().toISOString().split('T')[0],
+                xp: 0,
+                level: 1,
+                streak: 0,
+                completedLessons: [],
+                completedProjects: [],
+                bookmarks: [],
+                notes: {},
+                learningHours: 0,
+                
+                role: (currentUser.email === 'harshavardhanhv119@gmail.com' || currentUser.email?.includes('admin')) ? 'Admin' : 'Student',
+                xpToNextLevel: 100,
+                weeklyStreak: 0,
+                completedTopics: [],
+                completedQuizzedTopics: [],
+                completedChallenges: [],
+                timeSpentMinutes: 0,
+                consistencyScore: 100,
+                projectedCompletionDate: '2026-12-31'
+              };
+              try {
+                await setDoc(userDocRef, initialProfile, { merge: true });
+                // Snapshot will fire again automatically and update state
+              } catch (setErr) {
+                console.error("Firestore creation save error during snapshot boot:", setErr);
+                setProfile(initialProfile);
+                setLoading(false);
               }
             }
+          }, (snapErr) => {
+            console.error("Realtime onSnapshot listener failed:", snapErr);
+            setLoading(false);
+          });
+
+          // Also fetch/sync with Express backend optionally
+          try {
+            await fetch('/api/profile');
           } catch (e) {
             console.warn("Could not retrieve backend state:", e);
           }
 
-          // Or generate backup profile standard local profile
-          if (!fetchedProfile) {
-            fetchedProfile = {
-              uid: currentUser.uid,
-              name: currentUser.displayName || currentUser.email?.split('@')[0] || 'WebDevCadet',
-              username: currentUser.displayName || currentUser.email?.split('@')[0] || 'WebDevCadet',
-              email: currentUser.email || 'guest@webdevacademy.edu',
-              photoURL: currentUser.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.uid}`,
-              joinedDate: new Date().toISOString().split('T')[0],
-              xp: 0,
-              level: 1,
-              streak: 0,
-              completedLessons: [],
-              completedProjects: [],
-              bookmarks: [],
-              notes: {},
-              learningHours: 0,
-              
-              role: (currentUser.email === 'harshavardhanhv119@gmail.com' || currentUser.email?.includes('admin')) ? 'Admin' : 'Student',
-              xpToNextLevel: 1000,
-              weeklyStreak: 0,
-              completedTopics: [],
-              completedQuizzedTopics: [],
-              completedChallenges: [],
-              timeSpentMinutes: 0,
-              consistencyScore: 100,
-              projectedCompletionDate: '2026-12-31'
-            };
-            // Sync to firestore and backend
-            await writeProfileToAllBackends(currentUser.uid, fetchedProfile);
-          }
-
-          setProfile(fetchedProfile);
         } else {
           setUser(null);
           setProfile(null);
+          setLoading(false);
         }
-        setLoading(false);
       });
     } else {
       // Offline mock session loader
@@ -181,7 +181,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+      }
+    };
   }, []);
 
   const writeProfileToAllBackends = async (uid: string, updatedProfile: UserProfile) => {

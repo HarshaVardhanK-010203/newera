@@ -111,16 +111,52 @@ export default function Dashboard({ profile, analytics, onSelectTopic, onUpdateS
 
         {/* Level Progress */}
         <div className="mt-8 border-t border-white/10 pt-6">
-          <div className="flex justify-between items-center text-sm mb-2 text-neutral-300">
-            <span>Progress to Next Level</span>
-            <span className="font-mono text-cyan-300 font-semibold">{profile.xp % 1000} / 1000 XP</span>
-          </div>
-          <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-linear-to-r from-cyan-400 to-indigo-500 rounded-full transition-all duration-700"
-              style={{ width: `${(profile.xp % 1000) / 10}%` }}
-            ></div>
-          </div>
+          {(() => {
+            const levelMinXp: { [level: number]: number } = {
+              1: 0,
+              2: 100,
+              3: 250,
+              4: 500,
+              5: 1000,
+              6: 2000,
+              7: 3500,
+              8: 5000,
+            };
+            const levelMaxXp: { [level: number]: number } = {
+              1: 100,
+              2: 250,
+              3: 500,
+              4: 1000,
+              5: 2000,
+              6: 3500,
+              7: 5000,
+              8: 5000,
+            };
+
+            const currentLvl = profile.level || 1;
+            const minXp = levelMinXp[currentLvl] ?? 5000;
+            const maxXp = levelMaxXp[currentLvl] ?? 5000;
+            const range = maxXp - minXp;
+            
+            const earned = currentLvl >= 8 ? (profile.xp - 5000) : Math.max(0, profile.xp - minXp);
+            const percent = currentLvl >= 8 ? 100 : Math.min(100, Math.round((earned / (range || 1)) * 100));
+            const xpNeededForNext = currentLvl >= 8 ? "MAX LEVEL" : `${earned} / ${range} XP`;
+
+            return (
+              <>
+                <div className="flex justify-between items-center text-sm mb-2 text-neutral-300">
+                  <span>Progress to Next Level</span>
+                  <span className="font-mono text-cyan-300 font-semibold">{xpNeededForNext}</span>
+                </div>
+                <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-linear-to-r from-cyan-400 to-indigo-500 rounded-full transition-all duration-700"
+                    style={{ width: `${percent}%` }}
+                  ></div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 

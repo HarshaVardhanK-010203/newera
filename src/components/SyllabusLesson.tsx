@@ -10,7 +10,7 @@ interface SyllabusLessonProps {
   topic: Topic;
   profile: UserProfile;
   onBookmark: (topicId: string) => void;
-  onSaveProgress: (payload: { topicId: string; quizCompleted?: boolean; isChallenge?: boolean; isProject?: boolean; xpBonus?: number }) => void;
+  onSaveProgress: (payload: { topicId: string; quizCompleted?: boolean; isChallenge?: boolean; isProject?: boolean; xpBonus?: number; quizScore?: number }) => void;
   onOpenPlayground: (code: string, tab: 'html' | 'css' | 'js' | 'react') => void;
 }
 
@@ -62,14 +62,17 @@ export default function SyllabusLesson({ topic, profile, onBookmark, onSaveProgr
     if (quizSubmitted) return;
     setQuizSubmitted(true);
 
-    const isAllCorrect = topic.mcqs.every(q => selectedAnswers[q.id] === q.correctAnswerIndex);
+    const correctCount = topic.mcqs.filter(q => selectedAnswers[q.id] === q.correctAnswerIndex).length;
+    const scoreVal = Math.round((correctCount / topic.mcqs.length) * 100);
+    const isAllCorrect = correctCount === topic.mcqs.length;
     setQuizSuccess(isAllCorrect);
 
     // Call progress tracker
     onSaveProgress({
       topicId: topic.id,
       quizCompleted: true,
-      xpBonus: isAllCorrect ? 150 : 50
+      xpBonus: isAllCorrect ? 150 : 50,
+      quizScore: scoreVal
     });
   };
 

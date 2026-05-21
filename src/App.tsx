@@ -24,9 +24,36 @@ import AdminDashboard from './components/AdminDashboard';
 import DSALearningEcosystem from './components/DSALearningEcosystem';
 import { useAuth } from './AuthContext';
 
+
+function calculateLevel(xp: number): number {
+  if (xp >= 5000) return 8;
+  if (xp >= 3500) return 7;
+  if (xp >= 2000) return 6;
+  if (xp >= 1000) return 5;
+  if (xp >= 500) return 4;
+  if (xp >= 250) return 3;
+  if (xp >= 100) return 2;
+  return 1;
+}
+
+function getXpToNextLevel(xp: number, currentLevel: number): number {
+  const levelXpTargets: { [level: number]: number } = {
+    1: 100,
+    2: 250,
+    3: 500,
+    4: 1000,
+    5: 2000,
+    6: 3500,
+    7: 5000,
+    8: 5000,
+  };
+  const target = levelXpTargets[currentLevel] || 5000;
+  return Math.max(0, target - xp);
+}
+
 export default function App() {
   const { profile, syncProfileData, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'syllabus' | 'playground' | 'tutor' | 'interviews' | 'careers' | 'dsa' | 'growth' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab ] = useState<'dashboard' | 'syllabus' | 'playground' | 'tutor' | 'interviews' | 'careers' | 'dsa' | 'growth' | 'admin'>('dashboard');
   
   // App states
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
@@ -34,6 +61,75 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSectionId, setActiveSectionId] = useState<string | null>("sec-1");
+
+  // Level up overlay states
+  const [levelUpOverlay, setLevelUpOverlay] = useState<{ oldLevel: number; newLevel: number } | null>(null);
+  const [prevLevel, setPrevLevel] = useState<number | null>(null);
+
+  // Monitor profile level change events to trigger level up screens
+  useEffect(() => {
+    if (profile && profile.level) {
+      if (prevLevel !== null && profile.level > prevLevel) {
+        setLevelUpOverlay({ oldLevel: prevLevel, newLevel: profile.level });
+      }
+      setPrevLevel(profile.level);
+    } else if (!profile) {
+      setPrevLevel(null);
+    }
+  }, [profile?.level]);
+
+  // Real-time study session timer tracking
+  useEffect(() => {
+    if (!profile) return;
+    
+    // Increment study time minutes + learning hours every 1 minute
+    const interval = setInterval(async () => {
+      try {
+        const updatedProfile = {
+          ...profile,
+          timeSpentMinutes: (profile.timeSpentMinutes || 0) + 1,
+          learningHours: Number(((profile.learningHours || 0) + (1 / 60)).toFixed(4))
+        };
+        await syncProfileData(updatedProfile);
+      } catch (err) {
+        console.error("Failed to sync study session timer:", err);
+      }
+    }, 60000);
+    
+    return () => clearInterval(interval);
+  }, [profile?.uid, profile ? "" : "stale"]);
+
+  // Daily login streak & last activity tracker runs once User Profile loads
+  useEffect(() => {
+    if (!profile) return;
+    
+    const lastActivity = profile.notes?.last_activity;
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    if (lastActivity !== todayStr) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      let newStreak = profile.streak || 1;
+      if (lastActivity === yesterdayStr) {
+        newStreak += 1;
+      } else if (lastActivity && lastActivity !== todayStr) {
+        newStreak = 1;
+      }
+      
+      const updatedProfile = {
+        ...profile,
+        streak: newStreak,
+        notes: {
+          ...profile.notes,
+          last_activity: todayStr
+        }
+      };
+      
+      syncProfileData(updatedProfile);
+    }
+  }, [profile?.uid]);
 
   // Playground code override trigger
   const [overridePlaygroundCode, setOverridePlaygroundCode] = useState<string>("");
@@ -53,31 +149,120 @@ export default function App() {
   };
 
   const handleBookmark = async (topicId: string) => {
+    if (!profile) return;
     try {
-      const response = await fetch('/api/bookmark', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topicId })
-      });
-      const data = await response.json();
-      if (response.ok && data.profile) {
-        syncProfileData(data.profile);
+      const isBookmarked = profile.bookmarks.includes(topicId);
+      const updatedBookmarks = isBookmarked
+        ? profile.bookmarks.filter(b => b !== topicId)
+        : [...profile.bookmarks, topicId];
+        
+      const updatedProfile = {
+        ...profile,
+        bookmarks: updatedBookmarks
+      };
+      
+      await syncProfileData(updatedProfile);
+
+      // Trigger backend bookmark API as backup
+      try {
+        await fetch('/api/bookmark', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topicId })
+        });
+      } catch (bkErr) {
+        console.warn("Express bookmarks sync backup ignored:", bkErr);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleSaveProgress = async (payload: { topicId: string; quizCompleted?: boolean; isChallenge?: boolean; isProject?: boolean; xpBonus?: number }) => {
+  const handleSaveProgress = async (payload: { topicId: string; quizCompleted?: boolean; isChallenge?: boolean; isProject?: boolean; xpBonus?: number; quizScore?: number }) => {
+    if (!profile) return;
     try {
-      const response = await fetch('/api/save-progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      if (response.ok && data.profile) {
-        syncProfileData(data.profile);
+      let updatedProfile = { ...profile };
+      let gainedXP = 0;
+
+      // Initialize structures securely
+      if (!updatedProfile.completedLessons) updatedProfile.completedLessons = [];
+      if (!updatedProfile.completedTopics) updatedProfile.completedTopics = [];
+      if (!updatedProfile.completedQuizzedTopics) updatedProfile.completedQuizzedTopics = [];
+      if (!updatedProfile.completedChallenges) updatedProfile.completedChallenges = [];
+      if (!updatedProfile.completedProjects) updatedProfile.completedProjects = [];
+
+      // 1. Lesson Completed Tracker
+      if (payload.topicId && !payload.quizCompleted && !payload.isChallenge && !payload.isProject) {
+        if (!updatedProfile.completedLessons.includes(payload.topicId)) {
+          updatedProfile.completedLessons.push(payload.topicId);
+        }
+        if (!updatedProfile.completedTopics.includes(payload.topicId)) {
+          updatedProfile.completedTopics.push(payload.topicId);
+        }
+        gainedXP += 20;
+
+        const totalTopicsCount = 15;
+        updatedProfile.completionPercentage = Math.round((updatedProfile.completedTopics.length / totalTopicsCount) * 100);
+      }
+
+      // 2. Quiz Completed Tracker
+      if (payload.quizCompleted && payload.topicId) {
+        if (!updatedProfile.completedQuizzedTopics.includes(payload.topicId)) {
+          updatedProfile.completedQuizzedTopics.push(payload.topicId);
+        }
+        gainedXP += 10;
+
+        // Save Score
+        const score = payload.quizScore !== undefined ? payload.quizScore : 100;
+        updatedProfile.notes = {
+          ...updatedProfile.notes,
+          [`${payload.topicId}_quiz_score`]: String(score)
+        };
+      }
+
+      // 3. Challenge Completed Tracker
+      if (payload.isChallenge && payload.topicId) {
+        if (!updatedProfile.completedChallenges.includes(payload.topicId)) {
+          updatedProfile.completedChallenges.push(payload.topicId);
+        }
+        updatedProfile.consistencyScore = Math.min(100, (updatedProfile.consistencyScore || 0) + 10);
+      }
+
+      // 4. Project Completed Tracker
+      if (payload.isProject && payload.topicId) {
+        if (!updatedProfile.completedProjects.includes(payload.topicId)) {
+          updatedProfile.completedProjects.push(payload.topicId);
+        }
+        gainedXP += 100;
+      }
+
+      if (payload.xpBonus) {
+        gainedXP += payload.xpBonus;
+      }
+
+      updatedProfile.xp += gainedXP;
+
+      // Level recalculations
+      const oldLevel = updatedProfile.level || 1;
+      const newLevel = calculateLevel(updatedProfile.xp);
+      updatedProfile.level = newLevel;
+      updatedProfile.xpToNextLevel = getXpToNextLevel(updatedProfile.xp, newLevel);
+
+      // Write changes
+      await syncProfileData(updatedProfile);
+
+      // Sync backend API as backup
+      try {
+        await fetch('/api/save-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            quizScore: payload.quizScore !== undefined ? payload.quizScore : 100
+          })
+        });
+      } catch (apiErr) {
+        console.warn("Express backend sync backup ignored:", apiErr);
       }
     } catch (err) {
       console.error(err);
@@ -85,11 +270,23 @@ export default function App() {
   };
 
   const handleUpdateStreak = async () => {
+    if (!profile) return;
     try {
-      const response = await fetch('/api/streak', { method: 'POST' });
-      const data = await response.json();
-      if (response.ok && data.profile) {
-        syncProfileData(data.profile);
+      const todayStr = new Date().toISOString().split('T')[0];
+      const updatedProfile = {
+        ...profile,
+        streak: (profile.streak || 0) + 1,
+        notes: {
+          ...profile.notes,
+          last_activity: todayStr
+        }
+      };
+      await syncProfileData(updatedProfile);
+
+      try {
+        await fetch('/api/streak', { method: 'POST' });
+      } catch (err) {
+        console.warn("Rest streak api backup sync warning:", err);
       }
     } catch (err) {
       console.error(err);
@@ -665,6 +862,84 @@ export default function App() {
           </main>
         </>
       )}
+
+      {/* Dynamic Level Up Popup Modal Screen Overlay */}
+      <AnimatePresence>
+        {levelUpOverlay && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-md w-full bg-linear-to-b from-indigo-950 via-neutral-950 to-neutral-950 border border-cyan-500/30 p-8 rounded-3xl shadow-2xl text-center overflow-hidden"
+            >
+              {/* Animated particles backing */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl animate-pulse"></div>
+                <div className="absolute bottom-1/4 right-1/4 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
+                
+                {/* Simulated XP burst particles */}
+                <div className="absolute top-12 left-12 w-2 h-2 bg-cyan-400 rounded-full animate-ping"></div>
+                <div className="absolute bottom-12 right-12 w-2 h-2 bg-yellow-400 rounded-full animate-ping delay-500"></div>
+                <div className="absolute top-1/2 right-8 w-1.5 h-1.5 bg-purple-400 rounded-full animate-ping delay-200"></div>
+                <div className="absolute bottom-1/3 left-8 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping delay-700"></div>
+              </div>
+
+              {/* Sparkling Crown / Level Up Trophy */}
+              <div className="relative inline-flex items-center justify-center p-5 bg-gradient-to-tr from-yellow-500 to-amber-400 text-neutral-950 rounded-full shadow-lg mb-6 shadow-yellow-500/20">
+                <Sparkles className="w-10 h-10 animate-bounce" />
+                <div className="absolute inset-0 rounded-full border-2 border-yellow-300 animate-ping opacity-30"></div>
+              </div>
+
+              <span className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase font-black">// ACADEMIC MASTERY UPGRADED</span>
+              <h2 className="text-3xl font-black text-white mt-1 mb-2 bg-linear-to-r from-yellow-300 via-amber-200 to-cyan-200 bg-clip-text text-transparent">
+                LEVEL UPGRADE!
+              </h2>
+              
+              <p className="text-neutral-400 text-xs mb-6 px-4">
+                You have gained legendary computer science credentials. New concepts and experimental learning sandboxes are unlocked.
+              </p>
+
+              {/* Old vs New Level Visual representation */}
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] font-mono text-neutral-500 uppercase">CADET LEVEL</span>
+                  <div className="w-14 h-14 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 font-bold font-mono text-xl">
+                    Lvl {levelUpOverlay.oldLevel}
+                  </div>
+                </div>
+                
+                <div className="h-0.5 w-12 bg-linear-to-r from-neutral-800 via-cyan-500 to-neutral-800 relative">
+                  <div className="absolute -top-1 right-5 text-cyan-400">⚡</div>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] font-mono text-yellow-400 uppercase font-bold tracking-widest">RANK UP</span>
+                  <div className="w-16 h-16 rounded-2xl bg-yellow-500/10 border-2 border-yellow-400 flex items-center justify-center text-yellow-400 font-black font-mono text-2xl shadow-lg shadow-yellow-500/10">
+                    Lvl {levelUpOverlay.newLevel}
+                  </div>
+                </div>
+              </div>
+
+              {/* Achievement Award Banner */}
+              <div className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl mb-6 flex items-center gap-3 text-left">
+                <Award className="w-8 h-8 text-yellow-400 shrink-0 fill-yellow-500/10" />
+                <div>
+                  <h4 className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Achievement Secured</h4>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">Unlocked level {levelUpOverlay.newLevel} certification and FAANG interview pathways.</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setLevelUpOverlay(null)}
+                className="w-full py-3 bg-linear-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black rounded-xl text-xs sm:text-sm tracking-wide transition shadow-xl cursor-pointer"
+              >
+                Acknowledge & Continue
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

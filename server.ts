@@ -12,6 +12,32 @@ dotenv.config();
 const DB_FILE = path.join(process.cwd(), 'db.json');
 
 // Initialize template profile helper
+function calculateLevel(xp: number): number {
+  if (xp >= 5000) return 8;
+  if (xp >= 3500) return 7;
+  if (xp >= 2000) return 6;
+  if (xp >= 1000) return 5;
+  if (xp >= 500) return 4;
+  if (xp >= 250) return 3;
+  if (xp >= 100) return 2;
+  return 1;
+}
+
+function getXpToNextLevel(xp: number, currentLevel: number): number {
+  const levelXpTargets: { [level: number]: number } = {
+    1: 100,
+    2: 250,
+    3: 500,
+    4: 1000,
+    5: 2000,
+    6: 3500,
+    7: 5000,
+    8: 5000,
+  };
+  const target = levelXpTargets[currentLevel] || 5000;
+  return Math.max(0, target - xp);
+}
+
 function generateEmptyProfile(username: string, email: string): any {
   return {
     username,
@@ -19,7 +45,7 @@ function generateEmptyProfile(username: string, email: string): any {
     role: 'Student',
     level: 1,
     xp: 0,
-    xpToNextLevel: 1000,
+    xpToNextLevel: 100,
     streak: 1,
     weeklyStreak: 1,
     completedTopics: [],
@@ -228,49 +254,72 @@ app.post('/api/save-progress', (req, res) => {
   }
 
   const profile = user.profile;
-  let gainedXP = xpBonus || 0;
+  let gainedXP = 0;
 
   // Track completed lessons
-  if (topicId) {
+  if (topicId && !quizCompleted && !isChallenge && !isProject) {
+    if (!profile.completedLessons) {
+      profile.completedLessons = [];
+    }
+    if (!profile.completedLessons.includes(topicId)) {
+      profile.completedLessons.push(topicId);
+    }
     if (!profile.completedTopics.includes(topicId)) {
       profile.completedTopics.push(topicId);
-      gainedXP += 100; // XP per topic read-through
     }
+    gainedXP += 20; // XP per topic completed
+
+    const totalTopicsCount = 15;
+    profile.completionPercentage = Math.round((profile.completedTopics.length / totalTopicsCount) * 100);
   }
 
   // Quiz completed elements
   if (quizCompleted && topicId) {
     if (!profile.completedQuizzedTopics.includes(topicId)) {
       profile.completedQuizzedTopics.push(topicId);
-      gainedXP += 150; // XP per quiz finished
     }
+    gainedXP += 10; // XP per quiz finished
+
+    // Save score
+    const scoreVal = req.body.quizScore !== undefined ? req.body.quizScore : 100;
+    profile.notes = {
+      ...profile.notes,
+      [`${topicId}_quiz_score`]: String(scoreVal)
+    };
   }
 
   // Challenge completed elements
   if (isChallenge && topicId) {
     if (!profile.completedChallenges.includes(topicId)) {
       profile.completedChallenges.push(topicId);
-      gainedXP += 200; // Extra challenge XP points
     }
+    profile.consistencyScore = Math.min(100, (profile.consistencyScore || 0) + 10);
   }
 
   // Project completed elements
   if (isProject && topicId) {
     if (!profile.completedProjects.includes(topicId)) {
       profile.completedProjects.push(topicId);
-      gainedXP += 500; // Massive projects progression bonus
     }
+    gainedXP += 100; // XP per project finished
   }
 
-  // Custom added time analytics
+  // Custom added time analytics / study trackers
   if (timeSpentIncr) {
     profile.timeSpentMinutes += timeSpentIncr;
+    if (!profile.learningHours) {
+      profile.learningHours = 0;
+    }
+    profile.learningHours = Number((profile.learningHours + (timeSpentIncr / 60)).toFixed(4));
   }
 
   // Apply gained XP & check leveling up
   profile.xp += gainedXP;
-  const currentLvl = Math.floor(profile.xp / 1000) + 1;
-  if (currentLvl > profile.level) {
+  
+  const oldLvl = profile.level || 1;
+  const currentLvl = calculateLevel(profile.xp);
+  
+  if (currentLvl > oldLvl) {
     profile.level = currentLvl;
     profile.rewards.push({
       id: `lvl-${currentLvl}`,
@@ -280,7 +329,7 @@ app.post('/api/save-progress', (req, res) => {
     });
   }
 
-  profile.xpToNextLevel = (profile.level * 1000) - profile.xp;
+  profile.xpToNextLevel = getXpToNextLevel(profile.xp, profile.level);
 
   // Let's calibrate leaderboard statistics
   const userLeader = db.leaderboard.find((u: any) => u.username === profile.username);

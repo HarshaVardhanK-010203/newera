@@ -9,7 +9,7 @@ import { Topic, UserProfile } from '../types';
 interface DeepLearningProps {
   topic: Topic;
   profile: UserProfile;
-  onSaveProgress: (payload: { topicId: string; quizCompleted?: boolean; isChallenge?: boolean; isProject?: boolean; xpBonus?: number }) => void;
+  onSaveProgress: (payload: { topicId: string; quizCompleted?: boolean; isChallenge?: boolean; isProject?: boolean; xpBonus?: number; quizScore?: number }) => void;
   onOpenPlayground: (code: string, tab: 'html' | 'css' | 'js' | 'react') => void;
 }
 
