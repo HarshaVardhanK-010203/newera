@@ -1,0 +1,70 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with academic progress details and badges",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["Student", "Mentor", "Admin"]
+        },
+        "level": {
+          "type": "integer"
+        },
+        "xp": {
+          "type": "integer"
+        },
+        "xpToNextLevel": {
+          "type": "integer"
+        },
+        "streak": {
+          "type": "integer"
+        },
+        "weeklyStreak": {
+          "type": "integer"
+        },
+        "completedTopics": {
+          "type": "array"
+        },
+        "completedQuizzedTopics": {
+          "type": "array"
+        },
+        "bookmarks": {
+          "type": "array"
+        },
+        "completedChallenges": {
+          "type": "array"
+        },
+        "completedProjects": {
+          "type": "array"
+        },
+        "timeSpentMinutes": {
+          "type": "integer"
+        },
+        "consistencyScore": {
+          "type": "integer"
+        },
+        "projectedCompletionDate": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "object"
+        }
+      },
+      "required": ["username", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Primary user profile storage with tracking details"
+    }
+  }
+}

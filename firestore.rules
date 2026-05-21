@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Global helper primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Role Lookup & Bootstrapped Administrator Check
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "harshavardhanhv119@gmail.com" ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Admin")
+      );
+    }
+
+    // Strict validation of document ID strings (prevent ID poisoning)
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Strict schema validator for users entity
+    function isValidUserProfile(data) {
+      return data.username is string && data.username.size() <= 100 &&
+             data.email is string && data.email.size() <= 120 &&
+             data.role is string && (data.role == "Student" || data.role == "Mentor" || data.role == "Admin") &&
+             (!('level' in data) || data.level is int) &&
+             (!('xp' in data) || data.xp is int) &&
+             (!('streak' in data) || data.streak is int);
+    }
+
+    // Primary User data Fortress
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      allow create: if isOwner(userId) && 
+                      isValidId(userId) && 
+                      isValidUserProfile(request.resource.data) &&
+                      // Self-assigned security controls: regular users can't create admin profile unless bootstrapped
+                      (request.resource.data.role != 'Admin' || request.auth.token.email == "harshavardhanhv119@gmail.com");
+                      
+      allow update: if isOwner(userId) && 
+                      isValidUserProfile(request.resource.data) && 
+                      // Protect identity fields from changes
+                      request.resource.data.email == resource.data.email &&
+                      // regular users can't elevate their own role to Admin
+                      (request.resource.data.role == resource.data.role || isAdmin()) &&
+                      (
+                        // Allow updating specific keys
+                        request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                          'username', 'role', 'level', 'xp', 'xpToNextLevel', 
+                          'streak', 'weeklyStreak', 'completedTopics', 
+                          'completedQuizzedTopics', 'bookmarks', 'completedChallenges', 
+                          'completedProjects', 'timeSpentMinutes', 'consistencyScore', 
+                          'projectedCompletionDate', 'notes'
+                        ])
+                      );
+                      
+      allow delete: if isAdmin();
+    }
+  }
+}

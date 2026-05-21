@@ -1,0 +1,6 @@
+{
+  "name": "WebDev Learning Platform",
+  "description": "An interactive, world-class full-stack web development learning academy featuring structured roadmaps, an AI mentor, a built-in multi-mode coding playground, terminal simulator, and progress tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
