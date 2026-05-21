@@ -58,6 +58,7 @@ export default function App() {
   // App states
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [justCompletedTopicId, setJustCompletedTopicId] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSectionId, setActiveSectionId] = useState<string | null>("sec-1");
@@ -233,7 +234,16 @@ export default function App() {
         if (!updatedProfile.completedProjects.includes(payload.topicId)) {
           updatedProfile.completedProjects.push(payload.topicId);
         }
+        if (!updatedProfile.completedLessons.includes(payload.topicId)) {
+          updatedProfile.completedLessons.push(payload.topicId);
+        }
+        if (!updatedProfile.completedTopics.includes(payload.topicId)) {
+          updatedProfile.completedTopics.push(payload.topicId);
+        }
         gainedXP += 100;
+
+        const totalTopicsCount = 15;
+        updatedProfile.completionPercentage = Math.round((updatedProfile.completedTopics.length / totalTopicsCount) * 100);
       }
 
       if (payload.xpBonus) {
@@ -636,6 +646,10 @@ export default function App() {
                         onBookmark={handleBookmark}
                         onSaveProgress={handleSaveProgress}
                         onOpenPlayground={loadSnippetIntoSandbox}
+                        onReturnToRoadmap={() => {
+                          setJustCompletedTopicId(selectedTopic.id);
+                          setSelectedTopic(null);
+                        }}
                       />
                     ) : (
                       <div className="space-y-6">
@@ -646,6 +660,8 @@ export default function App() {
                             const found = SECTIONS.flatMap(s => s.topics).find(t => t.id === id);
                             if (found) setSelectedTopic(found);
                           }}
+                          justCompletedTopicId={justCompletedTopicId}
+                          onClearJustCompleted={() => setJustCompletedTopicId(null)}
                         />
                       </div>
                     )}

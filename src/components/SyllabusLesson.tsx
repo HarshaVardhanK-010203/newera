@@ -12,9 +12,10 @@ interface SyllabusLessonProps {
   onBookmark: (topicId: string) => void;
   onSaveProgress: (payload: { topicId: string; quizCompleted?: boolean; isChallenge?: boolean; isProject?: boolean; xpBonus?: number; quizScore?: number }) => void;
   onOpenPlayground: (code: string, tab: 'html' | 'css' | 'js' | 'react') => void;
+  onReturnToRoadmap?: () => void;
 }
 
-export default function SyllabusLesson({ topic, profile, onBookmark, onSaveProgress, onOpenPlayground }: SyllabusLessonProps) {
+export default function SyllabusLesson({ topic, profile, onBookmark, onSaveProgress, onOpenPlayground, onReturnToRoadmap }: SyllabusLessonProps) {
   const [activeTab, setActiveTab] = useState<'learn' | 'quiz' | 'practice' | 'videos'>('learn');
   const [isDeepLearningActive, setIsDeepLearningActive] = useState<boolean>(true);
   const [noteText, setNoteText] = useState(profile.notes[topic.id] || "");
@@ -142,6 +143,7 @@ export default function SyllabusLesson({ topic, profile, onBookmark, onSaveProgr
           profile={profile}
           onSaveProgress={onSaveProgress}
           onOpenPlayground={onOpenPlayground}
+          onReturnToRoadmap={onReturnToRoadmap}
         />
       ) : (
         <>

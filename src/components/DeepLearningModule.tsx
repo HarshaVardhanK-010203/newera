@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Compass, Layout, Layers, HelpCircle, Terminal, Cpu, Award, Zap, 
   Play, RefreshCw, CheckCircle, AlertTriangle, FileText, Bookmark, 
-  Code, Eye, Check, ChevronRight, HelpCircle as QuestionIcon, Clock, Lock, BookOpen, Share
+  Code, Eye, Check, ChevronRight, HelpCircle as QuestionIcon, Clock, Lock, BookOpen, Share, ArrowRight
 } from 'lucide-react';
 import { Topic, UserProfile } from '../types';
 
@@ -11,9 +11,10 @@ interface DeepLearningProps {
   profile: UserProfile;
   onSaveProgress: (payload: { topicId: string; quizCompleted?: boolean; isChallenge?: boolean; isProject?: boolean; xpBonus?: number; quizScore?: number }) => void;
   onOpenPlayground: (code: string, tab: 'html' | 'css' | 'js' | 'react') => void;
+  onReturnToRoadmap?: () => void;
 }
 
-export default function DeepLearningModule({ topic, profile, onSaveProgress, onOpenPlayground }: DeepLearningProps) {
+export default function DeepLearningModule({ topic, profile, onSaveProgress, onOpenPlayground, onReturnToRoadmap }: DeepLearningProps) {
   const [activeStep, setActiveStep] = useState<number>(1);
   const [playgroundCode, setPlaygroundCode] = useState<string>('');
   const [playgroundOutput, setPlaygroundOutput] = useState<string[]>([]);
@@ -1246,10 +1247,32 @@ export default function DeepLearningModule({ topic, profile, onSaveProgress, onO
                     </div>
 
                     {masteryScore !== null && masteryScore >= 70 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-4">
                         <p className="text-xs text-emerald-600 font-bold">🎉 Outstanding! You cleared the mastery parameters. You can now mark this lesson completed and unlock subsequent topics.</p>
                         <div className="p-3 bg-emerald-500/10 text-emerald-500 text-xs font-mono font-bold rounded-lg border border-emerald-500/20">
                           XP Modifier Added: +400 XP
+                        </div>
+
+                        {/* Premium Glowing Return to Learning Roadmap Action Panel */}
+                        <div className="p-4 bg-neutral-900 border border-cyan-500/30 rounded-2xl shadow-lg relative overflow-hidden group">
+                          {/* Ambient glow backgrounds */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 opacity-50 pointer-events-none"></div>
+                          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-indigo-600 rounded-2xl blur-md opacity-20 group-hover:opacity-45 transition duration-500 pointer-events-none"></div>
+                          
+                          <div className="relative z-10 space-y-3">
+                            <p className="text-[11px] text-cyan-400 font-mono font-bold tracking-wider">// ACADEMIC MASTERY GRANTED • KEYWORDS REGISTERED</p>
+                            <button
+                              onClick={() => {
+                                if (onReturnToRoadmap) {
+                                  onReturnToRoadmap();
+                                }
+                              }}
+                              className="w-full relative overflow-hidden py-3 px-5 bg-gradient-to-r from-cyan-500 via-indigo-600 to-indigo-700 hover:from-cyan-400 hover:to-indigo-505 text-white font-black rounded-xl text-xs sm:text-sm tracking-wide transition-all duration-300 transform hover:scale-[1.02] shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)] cursor-pointer flex items-center justify-center gap-2 group/btn"
+                            >
+                              <span>✓ Return to Roadmap & Unlock Next Chapter</span>
+                              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
