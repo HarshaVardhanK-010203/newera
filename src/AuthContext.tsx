@@ -120,9 +120,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // Creating initial user profile
               const initialProfile: UserProfile = {
                 uid: currentUser.uid,
-                name: currentUser.displayName || currentUser.email?.split('@')[0] || 'WebDevCadet',
-                username: currentUser.displayName || currentUser.email?.split('@')[0] || 'WebDevCadet',
-                email: currentUser.email || 'guest@webdevacademy.edu',
+                name: currentUser.displayName || currentUser.email?.split('@')[0] || 'NewEraCadet',
+                username: currentUser.displayName || currentUser.email?.split('@')[0] || 'NewEraCadet',
+                email: currentUser.email || 'guest@newera.edu',
                 photoURL: currentUser.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.uid}`,
                 joinedDate: new Date().toISOString().split('T')[0],
                 xp: 0,
@@ -404,7 +404,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         const guestProfile: UserProfile = {
           username: 'Interstellar_Guest',
-          email: 'guest@webdevacademy.edu',
+          email: 'guest@newera.edu',
           role: 'Student',
           level: 1,
           xp: 0,
@@ -421,7 +421,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           projectedCompletionDate: '2026-12-15',
           notes: {}
         };
-        const mockUser = { uid: 'mock-guest-777', isAnonymous: true, email: 'guest@webdevacademy.edu' };
+        const mockUser = { uid: 'mock-guest-777', isAnonymous: true, email: 'guest@newera.edu' };
         setUser(mockUser);
         setProfile(guestProfile);
         localStorage.setItem('mockProfile', JSON.stringify(guestProfile));

@@ -329,9 +329,12 @@ export default function App() {
               ⚡ BEGINNER TO EXPERT TRACK
             </span>
             <h1 className="text-4xl md:text-5xl font-black bg-linear-to-r from-white via-neutral-200 to-indigo-200 bg-clip-text text-transparent">
-              DevAcad Learning Platform
+              NewEra
             </h1>
-            <p className="text-neutral-450 text-xs sm:text-sm">
+            <p className="text-xs uppercase font-mono font-bold tracking-widest text-indigo-400">
+              AI Powered Learning Universe
+            </p>
+            <p className="text-neutral-450 text-xs sm:text-sm mt-3">
               Discover compiler sandboxes, real-time quizzes, FAANG mock simulations, and private AI coding mentors. Login using the credentials <strong className="text-white">demo@gmail.com / demo123</strong> to experience instant authentication.
             </p>
           </div>
@@ -351,14 +354,14 @@ export default function App() {
 
           <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-72 h-screen shrink-0 border-r border-neutral-200 dark:border-neutral-850 bg-white dark:bg-neutral-950 transition-all duration-300 transform flex flex-col justify-between ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
             <div className="p-6 space-y-6 overflow-y-auto flex-1">
-              {/* DevAcad Logo */}
+              {/* NewEra Logo */}
               <div className="flex items-center gap-3 border-b border-neutral-100 dark:border-neutral-850 pb-4">
                 <div className="p-2.5 bg-indigo-650 text-white rounded-xl shadow-lg">
                   <Cpu className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black tracking-tight dark:text-white">DevAcad WebDev</h2>
-                  <span className="text-[9px] uppercase tracking-wider font-mono text-neutral-400 font-semibold">Master Academy</span>
+                  <h2 className="text-base font-black tracking-tight dark:text-white">NewEra</h2>
+                  <span className="text-[9px] uppercase tracking-wider font-mono text-neutral-400 font-semibold">AI Powered Learning Universe</span>
                 </div>
               </div>
 

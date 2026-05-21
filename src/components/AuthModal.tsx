@@ -157,7 +157,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
           <Shield className="w-8 h-8 fill-indigo-500/10 animate-pulse" />
         </div>
         <h2 className="text-2xl font-black text-neutral-950 dark:text-white tracking-tight">
-          {authMode === 'login' ? 'Welcome to WebDev Academy' : authMode === 'register' ? 'Register New Student' : authMode === 'forgot' ? 'Forgot Password Support' : 'Enter security OPT verification'}
+          {authMode === 'login' ? 'Welcome to NewEra' : authMode === 'register' ? 'Register New Student' : authMode === 'forgot' ? 'Forgot Password Support' : 'Enter security OPT verification'}
         </h2>
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
           {authMode === 'login' ? 'Sign in to access your dashboard and state tracking' : 'Gain full-stack master certifications today.'}

@@ -160,7 +160,7 @@ export default function CareerHub({ careerPaths }: CareerProps) {
                 <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">// EXPERIENCE TIMELINE</h3>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between items-start">
-                    <strong className="text-neutral-850 font-bold">WebDev Academy Academic Graduate</strong>
+                    <strong className="text-neutral-850 font-bold">NewEra Academic Graduate</strong>
                     <span className="text-neutral-450 font-mono">Present</span>
                   </div>
                   <p className="text-neutral-650 leading-relaxed italic">{resExp}</p>
@@ -168,7 +168,7 @@ export default function CareerHub({ careerPaths }: CareerProps) {
               </div>
 
               <div className="mt-8 border-t border-dashed border-neutral-200 pt-4 text-[10px] text-center text-neutral-400">
-                Generated via DevAcad Executive Career Architect • Print (Ctrl+P) to compile PDF backups securely.
+                Generated via NewEra Executive Career Architect • Print (Ctrl+P) to compile PDF backups securely.
               </div>
             </div>
 
@@ -191,7 +191,7 @@ export default function CareerHub({ careerPaths }: CareerProps) {
           <div className="border-b border-neutral-100 dark:border-neutral-850 pb-4">
             <h3 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-teal-500 animate-pulse" />
-              DevAcad Career matching: Remote internships & freelancing gigs
+              NewEra Career matching: Remote internships & freelancing gigs
             </h3>
             <p className="text-xs text-neutral-500 mt-0.5">Mock junior postings that fit your current learning level automatically.</p>
           </div>
@@ -201,7 +201,7 @@ export default function CareerHub({ careerPaths }: CareerProps) {
               <span className="text-[10px] font-mono px-2 py-0.5 bg-indigo-500/10 text-indigo-500 rounded font-bold">Remote Position</span>
               <h4 className="font-bold text-neutral-900 dark:text-white">Junior React/Tailwind Frontend Intern</h4>
               <p className="text-xs text-neutral-500">Duration: 3 Months • Compensation: $2500 / month • Stack requested: React ES6 hooks, Responsive CSS grids, Git flows.</p>
-              <button className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-xs text-white" onClick={() => alert("Simulated: Application drafted using DevAcad portfolio credentials!")}>Apply Intern</button>
+              <button className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-xs text-white" onClick={() => alert("Simulated: Application drafted using NewEra portfolio credentials!")}>Apply Intern</button>
             </div>
 
             <div className="p-5 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 space-y-3">

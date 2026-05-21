@@ -1,6 +1,6 @@
 {
-  "name": "WebDev Learning Platform",
-  "description": "An interactive, world-class full-stack web development learning academy featuring structured roadmaps, an AI mentor, a built-in multi-mode coding playground, terminal simulator, and progress tracking.",
+  "name": "NewEra",
+  "description": "NewEra - AI Powered Learning Universe. An interactive, world-class learning platform featuring structured roadmaps, an AI mentor, a built-in multi-mode coding playground, terminal simulator, and progress tracking.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

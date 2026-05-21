@@ -116,7 +116,7 @@ export default function AITutor({ activeTopic = "", activeCode = "", onCodeImpor
           </div>
           <div>
             <h3 className="text-sm font-bold flex items-center gap-1.5">
-              DevAcad AI Coding Mentor
+              NewEra AI Coding Mentor
               <span className="text-[9px] uppercase tracking-wider font-mono px-1.5 py-0.5 rounded-sm bg-white/20 text-yellow-200 border border-white/15">Active</span>
             </h3>
             {activeTopic && <p className="text-[10px] text-indigo-200 mt-0.5">Topic Target: <strong className="text-white">{activeTopic}</strong></p>}
