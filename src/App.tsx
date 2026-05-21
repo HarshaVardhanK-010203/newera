@@ -77,7 +77,8 @@ export default function App() {
   // Left Sidebar Collapsibility State
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
-  const sidebarIsExpanded = !sidebarCollapsed || sidebarHovered;
+  const [justCollapsed, setJustCollapsed] = useState(false);
+  const sidebarIsExpanded = !sidebarCollapsed || (sidebarHovered && !justCollapsed);
 
   // Notification Indicator Alert
   const [showNotifications, setShowNotifications] = useState(false);
@@ -374,8 +375,14 @@ export default function App() {
 
           {/* DUAL MODE COLLAPSIBLE SIDEBAR WITH HOVER EXPANSION */}
           <aside 
-            onMouseEnter={() => setSidebarHovered(true)}
-            onMouseLeave={() => setSidebarHovered(false)}
+            onMouseEnter={() => {
+              setSidebarHovered(true);
+              setJustCollapsed(false);
+            }}
+            onMouseLeave={() => {
+              setSidebarHovered(false);
+              setJustCollapsed(false);
+            }}
             className={`fixed lg:sticky top-0 left-0 z-40 bg-[#0A0F1C] border-r border-[#1E293B]/65 h-screen shrink-0 transition-all duration-300 ease-out flex flex-col justify-between select-none ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
             } ${sidebarIsExpanded ? 'w-64' : 'w-16'}`}
@@ -473,7 +480,15 @@ export default function App() {
             {/* Sidebar Bottom triggers */}
             <div className="p-4 border-t border-white/5 space-y-3">
               <button 
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                onClick={() => {
+                  const targetState = !sidebarCollapsed;
+                  setSidebarCollapsed(targetState);
+                  if (targetState) {
+                    setJustCollapsed(true);
+                  } else {
+                    setJustCollapsed(false);
+                  }
+                }}
                 className="w-full hidden lg:flex items-center gap-3.5 py-2 px-3 text-xs font-semibold text-[#94A3B8] hover:text-white cursor-pointer transition"
               >
                 <ChevronRight className={`w-4 h-4 transform transition-transform duration-300 ${sidebarIsExpanded ? 'rotate-180' : ''}`} />
