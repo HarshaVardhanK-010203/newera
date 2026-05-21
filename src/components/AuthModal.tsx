@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Sparkles, AlertCircle, ArrowRight, CornerDownRight, Laptop, Linkedin, Github } from 'lucide-react';
+import { Shield, Sparkles, AlertCircle, ArrowRight, CornerDownRight, Laptop, Github } from 'lucide-react';
 import { UserProfile } from '../types';
 import { useAuth } from '../AuthContext';
 
@@ -53,6 +53,8 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
         return 'Popup closed';
       case 'auth/network-request-failed':
         return 'Network error';
+      case 'auth/unauthorized-domain':
+        return 'Unauthorized domain! Please add "ais-dev-p2lbk6vsnhupyuimdmyine-474872110173.asia-east1.run.app" and "ais-pre-p2lbk6vsnhupyuimdmyine-474872110173.asia-east1.run.app" in Firebase Console under Authentication > Settings > Authorized domains.';
       default:
         const lower = errCode.toLowerCase();
         if (lower.includes('wrong-password') || lower.includes('invalid-credential') || lower.includes('invalid credentials')) {
@@ -61,6 +63,9 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
         if (lower.includes('user-not-found') || lower.includes('cannot find user')) return 'Account not found';
         if (lower.includes('popup-closed-by-user') || lower.includes('popup closed') || lower.includes('cancelled')) return 'Popup closed';
         if (lower.includes('network')) return 'Network error';
+        if (lower.includes('unauthorized-domain') || lower.includes('unauthorized domain')) {
+          return 'Unauthorized domain! Please add "ais-dev-p2lbk6vsnhupyuimdmyine-474872110173.asia-east1.run.app" and "ais-pre-p2lbk6vsnhupyuimdmyine-474872110173.asia-east1.run.app" to Authorized Domains in the Firebase Console Settings.';
+        }
         return errCode || 'Registration or login failure';
     }
   };
@@ -280,7 +285,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
       {authMode === 'login' && (
         <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-neutral-800 space-y-4">
           <p className="text-[10px] font-bold text-center text-neutral-400 uppercase tracking-widest">// SECURE SOCIAL DIRECT ENTRY</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button 
               onClick={() => executeSocialLogin('Google')}
               className="py-2.5 rounded-lg border border-neutral-200 hover:bg-neutral-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition text-neutral-700 cursor-pointer"
@@ -292,12 +297,6 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
               className="py-2.5 rounded-lg border border-neutral-200 hover:bg-neutral-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition text-neutral-700 cursor-pointer"
             >
               <Github className="w-3.5 h-3.5 text-neutral-900" /> GitHub
-            </button>
-            <button 
-              onClick={() => executeSocialLogin('LinkedIn')}
-              className="py-2.5 rounded-lg border border-neutral-200 hover:bg-neutral-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition text-neutral-700 cursor-pointer"
-            >
-              <Linkedin className="w-3.5 h-3.5 text-blue-700" /> LinkedIn
             </button>
           </div>
         </div>
