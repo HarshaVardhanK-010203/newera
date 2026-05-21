@@ -14,49 +14,23 @@ import {
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Setup config wrapper. If credentials are empty during initial setup,
-// we will run standard initializeApp with empty parameters or custom descriptors
+// Setup config wrapper with exact requested details
 const firebaseConfig = {
-  apiKey: "env-mock-api-key-safe-for-previewing-webdev-academy",
-  authDomain: "webdev-academy.firebaseapp.com",
-  projectId: "webdev-academy",
-  storageBucket: "webdev-academy.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:123456789"
+  apiKey: "AIzaSyDySEIdATIZzifTxI-Njdqvd6ZvTwGhKAI",
+  authDomain: "newera-f1fd6.firebaseapp.com",
+  projectId: "newera-f1fd6",
+  storageBucket: "newera-f1fd6.firebasestorage.app",
+  messagingSenderId: "1058723890974",
+  appId: "1:1058723890974:web:9717cbacb17242d6522b0f"
 };
 
-let app;
-let auth: any;
-let db: any;
-let googleProvider: any;
-let githubProvider: any;
-let isRealFirebase = false;
-
-try {
-  // If the sandbox provides native applet config json, load it
-  const activeConfig = require("./firebase-applet-config.json");
-  if (activeConfig && activeConfig.apiKey) {
-    app = initializeApp(activeConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    googleProvider = new GoogleAuthProvider();
-    githubProvider = new GithubAuthProvider();
-    isRealFirebase = true;
-    console.log("🔥 Firebase initialized successfully with cloud configuration.");
-  }
-} catch (e) {
-  // Fallback safe initialization
-  try {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    googleProvider = new GoogleAuthProvider();
-    githubProvider = new GithubAuthProvider();
-    console.log("📦 Loaded standard Firebase Sandbox Wrapper successfully.");
-  } catch (err) {
-    console.warn("⚠️ Firebase configuration error, using mock authentication context:", err);
-  }
-}
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+const githubProvider = new GithubAuthProvider();
+const provider = googleProvider; // alias matching user request
+const isRealFirebase = true;
 
 export {
   app,
@@ -64,6 +38,7 @@ export {
   db,
   googleProvider,
   githubProvider,
+  provider,
   isRealFirebase,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,

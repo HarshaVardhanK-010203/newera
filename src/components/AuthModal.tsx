@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
 import { Shield, Sparkles, AlertCircle, ArrowRight, CornerDownRight, Laptop, Linkedin, Github } from 'lucide-react';
 import { UserProfile } from '../types';
+import { useAuth } from '../AuthContext';
 
 interface AuthModalProps {
   onAuthSuccess: (profile: UserProfile) => void;
 }
 
 export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
+  const { 
+    loginEmailPassword, 
+    registerEmailPassword, 
+    loginGoogle, 
+    loginGithub, 
+    performPasswordReset,
+    profile 
+  } = useAuth();
+  
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot' | 'verifyOtp'>('login');
   
   // States
@@ -21,6 +31,40 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Elegant Toast Notifications state
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: 'success' | 'error' | 'info' }[]>([]);
+
+  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Math.random().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
+
+  const mapAuthError = (errCode: string): string => {
+    switch (errCode) {
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return 'Wrong password / Invalid credentials';
+      case 'auth/user-not-found':
+        return 'Account not found';
+      case 'auth/popup-closed-by-user':
+        return 'Popup closed';
+      case 'auth/network-request-failed':
+        return 'Network error';
+      default:
+        const lower = errCode.toLowerCase();
+        if (lower.includes('wrong-password') || lower.includes('invalid-credential') || lower.includes('invalid credentials')) {
+          return 'Wrong password / Invalid credentials';
+        }
+        if (lower.includes('user-not-found') || lower.includes('cannot find user')) return 'Account not found';
+        if (lower.includes('popup-closed-by-user') || lower.includes('popup closed') || lower.includes('cancelled')) return 'Popup closed';
+        if (lower.includes('network')) return 'Network error';
+        return errCode || 'Registration or login failure';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -28,73 +72,75 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
     setSuccessMessage(null);
 
     try {
-      let endpoint = "/api/login";
-      let payload: any = { email, password };
-
-      if (authMode === 'register') {
-        endpoint = "/api/register";
-        payload = { username, email, password, role };
-      } else if (authMode === 'forgot') {
-        endpoint = "/api/forgot-password";
-        payload = { email };
-      } else if (authMode === 'verifyOtp') {
-        endpoint = "/api/verify-otp";
-        payload = { email, otp, newPassword };
-      }
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        if (authMode === 'login' || authMode === 'register') {
-          onAuthSuccess(data.profile);
-        } else if (authMode === 'forgot') {
-          setSuccessMessage(data.message);
-          setAuthMode('verifyOtp');
-        } else if (authMode === 'verifyOtp') {
-          setSuccessMessage(data.message);
-          setAuthMode('login');
+      if (authMode === 'login') {
+        const result = await loginEmailPassword(email, password);
+        addToast("Login successful", "success");
+        if (result && result.user) {
+          // React context naturally updates profile via subscription,
+          // but to feel incredibly organic and low latency:
+          const targetProf = profile || result.profile;
+          if (targetProf) {
+            onAuthSuccess(targetProf);
+          }
         }
-      } else {
-        throw new Error(data.error);
+      } else if (authMode === 'register') {
+        const result = await registerEmailPassword(username, email, password, role);
+        addToast("Registration complete, auto-logging in...", "success");
+        if (result && result.user) {
+          const targetProf = profile || result.profile;
+          if (targetProf) {
+            onAuthSuccess(targetProf);
+          }
+        }
+      } else if (authMode === 'forgot') {
+        await performPasswordReset(email);
+        setSuccessMessage("Security reset code sent successfully");
+        addToast("Password reset link dispatched to path", "success");
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Authentication session could not be established.');
+      console.error(err);
+      const mappedMsg = mapAuthError(err?.code || err?.message || 'Authentication error.');
+      setErrorMessage(mappedMsg);
+      addToast(mappedMsg, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const executeSocialLogin = (platform: string) => {
+  const executeSocialLogin = async (platform: string) => {
     setLoading(true);
-    setTimeout(() => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      if (platform === 'Google') {
+        const result = await loginGoogle();
+        addToast("Login successful", "success");
+        if (result && result.user) {
+          const targetProf = profile || result.profile;
+          if (targetProf) {
+            onAuthSuccess(targetProf);
+          }
+        }
+      } else if (platform === 'GitHub') {
+        const result = await loginGithub();
+        addToast("Login successful", "success");
+        if (result && result.user) {
+          const targetProf = profile || result.profile;
+          if (targetProf) {
+            onAuthSuccess(targetProf);
+          }
+        }
+      } else {
+        addToast(`${platform} authentication not activated in standard template.`, "info");
+      }
+    } catch (err: any) {
+      console.error(err);
+      const mappedMsg = mapAuthError(err?.code || err?.message || 'Popup cancelled');
+      setErrorMessage(mappedMsg);
+      addToast(mappedMsg, "error");
+    } finally {
       setLoading(false);
-      // Simulate successful OAuth sign in
-      const mockProfile: UserProfile = {
-        username: `Social_${platform}_User`,
-        email: `social.${platform}@gmail.com`,
-        role: 'Student',
-        level: 1,
-        xp: 150,
-        xpToNextLevel: 850,
-        streak: 1,
-        weeklyStreak: 1,
-        completedTopics: [],
-        completedQuizzedTopics: [],
-        bookmarks: [],
-        completedChallenges: [],
-        completedProjects: [],
-        timeSpentMinutes: 10,
-        consistencyScore: 90,
-        projectedCompletionDate: '2026-11-20',
-        notes: {}
-      };
-      onAuthSuccess(mockProfile);
-    }, 1000);
+    }
   };
 
   return (
@@ -266,6 +312,25 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
         ) : (
           <p>Back to <button type="button" onClick={() => setAuthMode('login')} className="font-bold text-indigo-600 hover:underline">Credentials Access</button></p>
         )}
+      </div>
+
+      {/* Floating Elegant Toasts layer */}
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2.5 max-w-sm pointer-events-none">
+        {toasts.map(toast => (
+          <div 
+            key={toast.id}
+            className={`pointer-events-auto p-4 rounded-2xl border flex items-center gap-3 shadow-xl backdrop-blur-md transition-all duration-300 transform scale-100 animate-slide-up ${
+              toast.type === 'success' 
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                : toast.type === 'error'
+                  ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                  : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-405'
+            }`}
+          >
+            <Shield className={`w-5 h-5 shrink-0 ${toast.type === 'success' ? 'text-emerald-500' : toast.type === 'error' ? 'text-red-500' : 'text-indigo-500'}`} />
+            <span className="text-xs font-bold leading-normal">{toast.message}</span>
+          </div>
+        ))}
       </div>
 
     </div>

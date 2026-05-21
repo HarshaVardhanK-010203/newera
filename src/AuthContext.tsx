@@ -26,7 +26,7 @@ interface AuthContextType {
   rememberMe: boolean;
   setRememberMe: (val: boolean) => void;
   loginEmailPassword: (email: string, password: string) => Promise<any>;
-  registerEmailPassword: (username: string, email: string, role?: string) => Promise<any>;
+  registerEmailPassword: (username: string, email: string, password?: string, role?: string) => Promise<any>;
   loginGoogle: () => Promise<any>;
   loginGithub: () => Promise<any>;
   loginAnonymous: () => Promise<any>;
@@ -35,6 +35,53 @@ interface AuthContextType {
   phoneOTPVerify: (phoneNumber: string, otp: string) => Promise<any>;
   logout: () => Promise<void>;
   syncProfileData: (updatedProfile: UserProfile) => Promise<void>;
+}
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid || null,
+      email: auth?.currentUser?.email || null,
+      emailVerified: auth?.currentUser?.emailVerified || null,
+      isAnonymous: auth?.currentUser?.isAnonymous || null,
+      tenantId: auth?.currentUser?.tenantId || null,
+      providerInfo: auth?.currentUser?.providerData?.map((provider: any) => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error Details: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -65,6 +112,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           } catch (e) {
             console.warn("Could not retrieve profile from Firestore:", e);
+            try {
+              handleFirestoreError(e, OperationType.GET, `users/${currentUser.uid}`);
+            } catch (jsonErr) {
+              console.error(jsonErr);
+            }
           }
 
           // Also fetch/sync with Express backend to ensure matching server session State
@@ -83,23 +135,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Or generate backup profile standard local profile
           if (!fetchedProfile) {
             fetchedProfile = {
+              uid: currentUser.uid,
+              name: currentUser.displayName || currentUser.email?.split('@')[0] || 'WebDevCadet',
               username: currentUser.displayName || currentUser.email?.split('@')[0] || 'WebDevCadet',
               email: currentUser.email || 'guest@webdevacademy.edu',
-              role: (currentUser.email === 'harshavardhanhv119@gmail.com' || currentUser.email?.includes('admin')) ? 'Admin' : 'Student',
+              photoURL: currentUser.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.uid}`,
+              joinedDate: new Date().toISOString().split('T')[0],
+              xp: 0,
               level: 1,
-              xp: 150,
-              xpToNextLevel: 850,
-              streak: 1,
-              weeklyStreak: 1,
+              streak: 0,
+              completedLessons: [],
+              completedProjects: [],
+              bookmarks: [],
+              notes: {},
+              learningHours: 0,
+              
+              role: (currentUser.email === 'harshavardhanhv119@gmail.com' || currentUser.email?.includes('admin')) ? 'Admin' : 'Student',
+              xpToNextLevel: 1000,
+              weeklyStreak: 0,
               completedTopics: [],
               completedQuizzedTopics: [],
-              bookmarks: [],
               completedChallenges: [],
-              completedProjects: [],
-              timeSpentMinutes: 5,
-              consistencyScore: 92,
-              projectedCompletionDate: '2026-11-20',
-              notes: {}
+              timeSpentMinutes: 0,
+              consistencyScore: 100,
+              projectedCompletionDate: '2026-12-31'
             };
             // Sync to firestore and backend
             await writeProfileToAllBackends(currentUser.uid, fetchedProfile);
@@ -133,7 +192,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log("🔄 Firestore synchronized User profile safely.");
       }
     } catch (e) {
-      console.warn("Firestore save skipped/failed:", e);
+      console.warn("Firestore save failed:", e);
+      try {
+        handleFirestoreError(e, OperationType.WRITE, `users/${uid}`);
+      } catch (jsonErr) {
+        console.error(jsonErr);
+      }
     }
 
     // 2. Sync to local backend REST session mock
@@ -188,30 +252,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const registerEmailPassword = async (username: string, email: string, role: 'Student' | 'Admin' | 'Mentor' = 'Student') => {
+  const registerEmailPassword = async (username: string, email: string, password?: string, role: 'Student' | 'Admin' | 'Mentor' = 'Student') => {
+    const finalPassword = password || "TempPassword123!";
     setLoading(true);
     try {
       if (auth && isRealFirebase) {
         // Real logic could trigger email/password creation, then email verification
-        const result = await createUserWithEmailAndPassword(auth, email, "TempPassword123!");
+        const result = await createUserWithEmailAndPassword(auth, email, finalPassword);
         const generated: UserProfile = {
+          uid: result.user.uid,
+          name: username,
           username,
           email,
-          role: ((email === 'harshavardhanhv119@gmail.com' || email?.includes('admin')) ? 'Admin' : role) as 'Student' | 'Admin' | 'Mentor',
+          photoURL: result.user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${result.user.uid}`,
+          joinedDate: new Date().toISOString().split('T')[0],
           level: 1,
-          xp: 100,
-          xpToNextLevel: 900,
-          streak: 1,
-          weeklyStreak: 1,
+          xp: 0,
+          xpToNextLevel: 1000,
+          streak: 0,
+          weeklyStreak: 0,
+          completedLessons: [],
+          completedProjects: [],
+          bookmarks: [],
+          notes: {},
+          learningHours: 0,
+          
+          role: ((email === 'harshavardhanhv119@gmail.com' || email?.includes('admin')) ? 'Admin' : role) as 'Student' | 'Admin' | 'Mentor',
+          completedChallenges: [],
           completedTopics: [],
           completedQuizzedTopics: [],
-          bookmarks: [],
-          completedChallenges: [],
-          completedProjects: [],
           timeSpentMinutes: 0,
-          consistencyScore: 90,
-          projectedCompletionDate: '2026-12-01',
-          notes: {}
+          consistencyScore: 100,
+          projectedCompletionDate: '2026-12-31'
         };
         await writeProfileToAllBackends(result.user.uid, generated);
         return result;
@@ -220,7 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, email, password: 'TempPassword123!', role })
+          body: JSON.stringify({ username, email, password: finalPassword, role })
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Registry failed.');

@@ -16,6 +16,13 @@ export interface UserProfile {
   consistencyScore: number;
   projectedCompletionDate: string;
   notes: { [topicId: string]: string };
+  // Firebase Auth additions
+  uid?: string;
+  name?: string;
+  photoURL?: string;
+  joinedDate?: string;
+  completedLessons?: string[];
+  learningHours?: number;
 }
 
 export interface TopicSyntax {
