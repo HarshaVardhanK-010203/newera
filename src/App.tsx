@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, Award, Flame, LogOut, ChevronRight, Menu, X, Lightbulb, User, BookOpen, 
   Clock, Heart, HelpCircle, Network, Code, Briefcase, ChevronDown, CheckCircle, 
-  Search, Bookmark, MessageSquare, Shield, Sun, Moon, Calendar, Users, Cpu, Target 
+  Search, Bookmark, MessageSquare, Shield, Sun, Moon, Calendar, Users, Cpu, Target,
+  FileText, Activity 
 } from 'lucide-react';
 
 // Data imports
@@ -22,6 +23,7 @@ import AuthModal from './components/AuthModal';
 import LinkedListVisualizer from './components/LinkedListVisualizer';
 import AdminDashboard from './components/AdminDashboard';
 import DSALearningEcosystem from './components/DSALearningEcosystem';
+import PortalOverlays from './components/PortalOverlays';
 import { useAuth } from './AuthContext';
 
 
@@ -66,6 +68,24 @@ export default function App() {
   // Level up overlay states
   const [levelUpOverlay, setLevelUpOverlay] = useState<{ oldLevel: number; newLevel: number } | null>(null);
   const [prevLevel, setPrevLevel] = useState<number | null>(null);
+
+  // Additional modal UI states
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [showCertificates, setShowCertificates] = useState(false);
+
+  // Left Sidebar Collapsibility State
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
+  const sidebarIsExpanded = !sidebarCollapsed || sidebarHovered;
+
+  // Notification Indicator Alert
+  const [showNotifications, setShowNotifications] = useState(false);
+  const mockNotifications = [
+    { id: 1, text: "🔥 Consistent Coding: Daily streak verified!", time: "2 mins ago" },
+    { id: 2, text: "🤖 AI Mentor solved current compiler exception.", time: "1 hour ago" },
+    { id: 3, text: "🎓 Striver DSA Sheet: Reverse Linked List recommended.", time: "4 hours ago" }
+  ];
 
   // Monitor profile level change events to trigger level up screens
   useEffect(() => {
@@ -316,25 +336,25 @@ export default function App() {
   );
 
   return (
-    <div className={`min-h-screen font-sans antialiased select-none tracking-tight flex transition-colors duration-300 ${darkMode ? 'dark bg-neutral-950 text-neutral-100' : 'bg-neutral-50 text-neutral-900'}`}>
+    <div className="min-h-screen font-sans antialiased select-none tracking-tight flex transition-all duration-300 bg-[#0A0F1C] text-[#F8FAFC]">
       
       {/* AUTH SCREEN CONTROLLER */}
       {!profile ? (
-        <div id="welcome-authentication-container" className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden bg-radial from-indigo-950 via-neutral-950 to-black text-white min-h-screen">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div id="welcome-authentication-container" className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden bg-radial from-[#1A103C] via-[#0A0F1C] to-black min-h-screen">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#06B6D4]/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#7C3AED]/10 rounded-full blur-3xl"></div>
           
-          <div className="relative text-center mb-6 space-y-2 max-w-lg z-10">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-400/20 text-cyan-300 border border-cyan-400/30">
+          <div className="relative text-center mb-8 space-y-3 max-w-lg z-10 animate-fade-in">
+            <span className="px-3.5 py-1 rounded-full text-[10px] font-bold bg-[#06B6D4]/15 text-[#06B6D4] border border-[#06B6D4]/25 uppercase tracking-wider font-mono">
               ⚡ BEGINNER TO EXPERT TRACK
             </span>
-            <h1 className="text-4xl md:text-5xl font-black bg-linear-to-r from-white via-neutral-200 to-indigo-200 bg-clip-text text-transparent">
+            <h1 className="text-5xl font-extrabold tracking-tighter bg-gradient-to-r from-white via-neutral-100 to-[#06B6D4]/45 bg-clip-text text-transparent">
               NewEra
             </h1>
-            <p className="text-xs uppercase font-mono font-bold tracking-widest text-indigo-400">
+            <p className="text-[10px] uppercase font-mono font-black tracking-widest text-[#7C3AED]">
               AI Powered Learning Universe
             </p>
-            <p className="text-neutral-450 text-xs sm:text-sm mt-3">
+            <p className="text-[#94A3B8] text-xs sm:text-sm mt-3 leading-relaxed">
               Discover compiler sandboxes, real-time quizzes, FAANG mock simulations, and private AI coding mentors. Login using the credentials <strong className="text-white">demo@gmail.com / demo123</strong> to experience instant authentication.
             </p>
           </div>
@@ -344,185 +364,206 @@ export default function App() {
       ) : (
         
         /* AUTHENTICATED PLATFORM SIDEBAR & PANELS */
-        <>
+        <div className="flex-1 flex flex-row min-h-screen relative overflow-hidden">
           {/* MOBILE SIDEBAR TRIGGER MENU BAR */}
-          <div className="lg:hidden fixed top-4 left-4 z-50 bg-neutral-900 text-white p-2 rounded-xl border border-neutral-800 shadow-md">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)}>
+          <div className="lg:hidden fixed top-3 left-4 z-50 bg-[#111827] text-white p-2.5 rounded-xl border border-[#1E293B] shadow-md">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle side drawer menu selection">
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
 
-          <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-72 h-screen shrink-0 border-r border-neutral-200 dark:border-neutral-850 bg-white dark:bg-neutral-950 transition-all duration-300 transform flex flex-col justify-between ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-            <div className="p-6 space-y-6 overflow-y-auto flex-1">
-              {/* NewEra Logo */}
-              <div className="flex items-center gap-3 border-b border-neutral-100 dark:border-neutral-850 pb-4">
-                <div className="p-2.5 bg-indigo-650 text-white rounded-xl shadow-lg">
-                  <Cpu className="w-5 h-5 animate-pulse" />
+          {/* DUAL MODE COLLAPSIBLE SIDEBAR WITH HOVER EXPANSION */}
+          <aside 
+            onMouseEnter={() => setSidebarHovered(true)}
+            onMouseLeave={() => setSidebarHovered(false)}
+            className={`fixed lg:sticky top-0 left-0 z-40 bg-[#0A0F1C] border-r border-[#1E293B]/65 h-screen shrink-0 transition-all duration-300 ease-out flex flex-col justify-between select-none ${
+              sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            } ${sidebarIsExpanded ? 'w-64' : 'w-16'}`}
+          >
+            <div className="p-4 space-y-6 overflow-y-auto flex-1">
+              {/* NewEra Premium Logo Badge */}
+              <div 
+                onClick={() => { setActiveTab('dashboard'); setSelectedTopic(null); }}
+                className="flex items-center gap-3 border-b border-[#1E293B]/40 pb-4 cursor-pointer"
+              >
+                <div className="p-2 bg-gradient-to-tr from-[#7C3AED] to-[#06B6D4] text-white rounded-xl shadow-md shrink-0">
+                  <Cpu className="w-4 h-4" />
                 </div>
-                <div>
-                  <h2 className="text-base font-black tracking-tight dark:text-white">NewEra</h2>
-                  <span className="text-[9px] uppercase tracking-wider font-mono text-neutral-400 font-semibold">AI Powered Learning Universe</span>
-                </div>
+                {sidebarIsExpanded && (
+                  <motion.div initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} className="leading-none">
+                    <h2 className="text-sm font-black tracking-tight text-white uppercase font-display">NewEra</h2>
+                    <span className="text-[8px] uppercase tracking-wider font-mono text-[#06B6D4] font-bold">AI Core Space</span>
+                  </motion.div>
+                )}
               </div>
 
-              {/* Quick statistics widgets */}
-              <div className="bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-850 p-3.5 rounded-2xl flex items-center justify-between shadow-2xs">
-                <div className="flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-orange-500 fill-orange-500/20" />
-                  <div>
-                    <p className="text-[10px] text-neutral-400 uppercase font-mono tracking-wider font-bold">STREAK</p>
-                    <p className="text-sm font-black font-mono leading-none mt-0.5">{profile.streak} Days</p>
-                  </div>
-                </div>
+              {/* Navigation Actions Menu */}
+              <div className="space-y-1 select-none">
+                {[
+                  { id: 'dashboard', label: 'Home Dashboard', icon: Target },
+                  { id: 'syllabus', label: 'Curriculum Timeline', icon: BookOpen },
+                  { id: 'dsa', label: 'DSA Cosmos Space', icon: Cpu },
+                  { id: 'playground', label: 'IDE Sandboxes', icon: Code },
+                  { id: 'tutor', label: 'AI Mentorship Coach', icon: MessageSquare },
+                ].map((item) => {
+                  const isActive = activeTab === item.id;
+                  const IconComp = item.icon;
 
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-yellow-500 fill-yellow-500/20" />
-                  <div>
-                    <p className="text-[10px] text-neutral-400 uppercase font-mono tracking-wider font-bold">LEVEL</p>
-                    <p className="text-sm font-black font-mono leading-none mt-0.5">{profile.level}</p>
-                  </div>
-                </div>
-              </div>
+                  return (
+                    <button 
+                      key={item.id}
+                      onClick={() => { setActiveTab(item.id as any); setSelectedTopic(null); if(window.innerWidth < 1024) setSidebarOpen(false); }}
+                      className={`w-full flex items-center gap-3.5 py-2.5 px-3 rounded-lg text-xs font-bold transition duration-150 cursor-pointer ${
+                        isActive 
+                          ? 'bg-[#1A2234] text-white border border-[#7C3AED]/25 shadow-xs' 
+                          : 'text-[#94A3B8] hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <IconComp className={`w-4 h-4 shrink-0 transition ${isActive ? 'text-[#06B6D4]' : ''}`} />
+                      {sidebarIsExpanded && (
+                        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="truncate">
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </button>
+                  );
+                })}
 
-              {/* Navigation list */}
-              <div className="space-y-1.5 select-none">
-                <button 
-                  onClick={() => { setActiveTab('dashboard'); setSelectedTopic(null); }}
-                  className={`w-full flex items-center justify-between py-2 px-3.5 text-xs font-black rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 dark:text-neutral-405 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                >
-                  <span className="flex items-center gap-2"><Target className="w-4 h-4 font-bold" /> Home Dashboard</span>
-                </button>
+                {/* Sidebar visual divider line */}
+                <div className="h-px bg-white/5 my-3"></div>
 
-                <button 
-                  onClick={() => { setActiveTab('syllabus'); }}
-                  className={`w-full flex items-center justify-between py-2 px-3.5 text-xs font-black rounded-lg transition-all ${activeTab === 'syllabus' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 dark:text-neutral-405 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                >
-                  <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> Curriculum Syllabus</span>
-                  <span className="text-[9px] px-1.5 py-0.5 bg-indigo-500/10 text-indigo-500 font-bold rounded-sm border border-indigo-500/15 font-mono">20 Secs</span>
-                </button>
-
-                <button 
-                  onClick={() => { setActiveTab('playground'); }}
-                  className={`w-full flex items-center justify-between py-2 px-3.5 text-xs font-black rounded-lg transition-all ${activeTab === 'playground' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                >
-                  <span className="flex items-center gap-2"><Code className="w-4 h-4" /> IDE Sandboxes</span>
-                  <span className="text-[9px] px-1.5 bg-teal-500/10 text-teal-500 font-bold rounded font-mono">React</span>
-                </button>
-
-                <button 
-                  onClick={() => { setActiveTab('tutor'); }}
-                  className={`w-full flex items-center justify-between py-2 px-3.5 text-xs font-black rounded-lg transition-all ${activeTab === 'tutor' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                >
-                  <span className="flex items-center gap-2"><MessageSquare className="w-4 h-4" /> AI Mentorship Coach</span>
-                  <span className="text-[9px] px-1.5 bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold rounded font-mono">AI</span>
-                </button>
-
-                <button 
-                  onClick={() => { setActiveTab('interviews'); }}
-                  className={`w-full flex items-center justify-between py-2 px-3.5 text-xs font-black rounded-lg transition-all ${activeTab === 'interviews' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                >
-                  <span className="flex items-center gap-2"><Award className="w-4 h-4" /> FAANG Prep Mocks</span>
-                </button>
-
-                <button 
-                  onClick={() => { setActiveTab('careers'); }}
-                  className={`w-full flex items-center justify-between py-2 px-3.5 text-xs font-black rounded-lg transition-all ${activeTab === 'careers' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                >
-                  <span className="flex items-center gap-2"><Briefcase className="w-4 h-4" /> Career Portfolio Builder</span>
-                </button>
-
-                <button 
-                  onClick={() => { setActiveTab('dsa'); }}
-                  className={`w-full flex items-center justify-between py-2 px-3.5 text-xs font-black rounded-lg transition-all ${activeTab === 'dsa' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                >
-                  <span className="flex items-center gap-2"><Cpu className="w-4 h-4 text-cyan-500 animate-pulse" /> Expert DS&A Cosmos</span>
-                  <span className="text-[9px] px-1.5 bg-cyan-500/10 text-cyan-500 font-bold rounded font-mono">NEW</span>
-                </button>
-
-                <button 
-                  onClick={() => { setActiveTab('growth'); }}
-                  className={`w-full flex items-center justify-between py-2 px-3.5 text-xs font-black rounded-lg transition-all ${activeTab === 'growth' ? 'bg-indigo-600 text-white shadow-xs' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                >
-                  <span className="flex items-center gap-2"><Target className="w-4 h-4 text-emerald-500" /> Personal Growth Space</span>
-                  <span className="text-[10px] text-neutral-400 font-mono">Private</span>
-                </button>
+                {/* Redesigned interactive slide options inside dashboard list */}
+                {[
+                  { key: 'bookmarks', label: 'Bookmarked Sheets', icon: Bookmark, action: () => setShowBookmarks(true) },
+                  { key: 'notes', label: 'Stored Summary Notes', icon: FileText, action: () => setShowNotes(true) },
+                  { key: 'certificates', label: 'Security Certs', icon: Award, action: () => setShowCertificates(true) },
+                  { key: 'growth', label: 'Analytics Growth', icon: Activity, action: () => setActiveTab('growth') },
+                ].map((util) => {
+                  const Icon = util.icon;
+                  return (
+                    <button 
+                      key={util.key}
+                      onClick={util.action}
+                      className="w-full flex items-center gap-3.5 py-2.5 px-3 rounded-lg text-xs font-semibold text-[#94A3B8] hover:bg-white/5 hover:text-white transition cursor-pointer"
+                    >
+                      <Icon className="w-4 h-4 shrink-0 text-gray-500 hover:text-white transition" />
+                      {sidebarIsExpanded && (
+                        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                          {util.label}
+                        </motion.span>
+                      )}
+                    </button>
+                  );
+                })}
 
                 {profile.role === 'Admin' && (
                   <button 
-                    onClick={() => { setActiveTab('admin'); }}
-                    className={`w-full flex items-center justify-between py-2 px-3.5 text-xs font-black rounded-lg transition-all ${activeTab === 'admin' ? 'bg-purple-600 text-white shadow-xs' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
+                    onClick={() => { setActiveTab('admin'); if(window.innerWidth < 1024) setSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3.5 py-2.5 px-3 rounded-lg text-xs font-bold cursor-pointer transition ${
+                      activeTab === 'admin' ? 'bg-[#7C3AED]/15 text-white border border-[#7C3AED]/30' : 'text-[#7C3AED] hover:bg-[#7C3AED]/5'
+                    }`}
                   >
-                    <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-purple-400" /> Admin Terminal</span>
-                    <span className="text-[9px] px-1.5 bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold rounded font-mono">ROOT</span>
+                    <Shield className="w-4 h-4 shrink-0" />
+                    {sidebarIsExpanded && <span className="truncate">Root Admin Shell</span>}
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Logout & configuration triggers */}
-            <div className="p-6 border-t border-neutral-100 dark:border-neutral-850 space-y-4">
-              <div className="flex items-center justify-between gap-3 p-2 bg-neutral-50 dark:bg-neutral-900/40 rounded-xl">
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <div className="avatar w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400 flex items-center justify-center font-bold">
-                    {profile.username.substring(0, 1).toUpperCase()}
-                  </div>
-                  <div className="overflow-hidden leading-none">
-                    <p className="text-xs font-bold leading-normal text-neutral-900 dark:text-white truncate">{profile.username}</p>
-                    <span className="text-[9px] font-mono font-semibold text-neutral-500 uppercase">{profile.role}</span>
-                  </div>
-                </div>
-              </div>
+            {/* Sidebar Bottom triggers */}
+            <div className="p-4 border-t border-white/5 space-y-3">
+              <button 
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="w-full hidden lg:flex items-center gap-3.5 py-2 px-3 text-xs font-semibold text-[#94A3B8] hover:text-white cursor-pointer transition"
+              >
+                <ChevronRight className={`w-4 h-4 transform transition-transform duration-300 ${sidebarIsExpanded ? 'rotate-180' : ''}`} />
+                {sidebarIsExpanded && <span>Collapse Sidebar</span>}
+              </button>
 
-              {/* Theme and Actions Row */}
-              <div className="flex items-center justify-between gap-2">
-                <button 
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="p-2 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition flex-1 flex justify-center gap-1.5 text-xs font-bold"
-                >
-                  {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />} {darkMode ? 'Light' : 'Dark'}
-                </button>
-
-                <button 
-                  onClick={handleLogout}
-                  className="p-2 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500/10 transition flex items-center justify-center gap-1.5 text-xs font-bold shrink-0"
-                >
-                  <LogOut className="w-4 h-4" /> Log out
-                </button>
-              </div>
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3.5 py-2.5 px-3 text-left hover:bg-red-500/10 text-red-400 rounded-lg text-xs font-bold transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                {sidebarIsExpanded && <span>Logout Account</span>}
+              </button>
             </div>
           </aside>
 
           {/* MAIN PAGE CONTAINER BAR */}
-          <main className="flex-1 flex flex-col h-screen overflow-y-auto lg:pl-0 pl-16">
+          <main className="flex-1 flex flex-col h-screen overflow-y-auto">
             
-            {/* Upper Global Head navbar */}
-            <header className="p-4 bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-850 flex flex-wrap items-center justify-between gap-4 select-none">
-              
-              {/* Global search */}
-              <div className="relative max-w-sm w-full">
-                <Search className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400 dark:text-neutral-550" />
+            {/* UPPER GLOBAL NAV HEADER BAR (Sticky Wide design) */}
+            <header className="sticky top-0 z-[100] h-14 bg-[#0A0F1C]/80 backdrop-blur-md border-b border-[#1E293B]/65 flex items-center justify-between px-6 select-none max-w-full">
+              {/* Left search */}
+              <div className="relative max-w-xs w-full lg:max-w-sm">
+                <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-[#94A3B8] opacity-60" />
                 <input 
                   type="text" 
                   value={searchQuery}
+                  aria-label="Smart global platform query finder"
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     if (activeTab !== 'syllabus') setActiveTab('syllabus');
                   }}
-                  placeholder="Search interactive HTML/CSS/JS curriculum..."
-                  className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 pl-9 pr-4 py-1.5 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-neutral-900 dark:text-white"
+                  placeholder="Ask curriculum, matching HTML, DOM..."
+                  className="w-full bg-[#111827] border border-[#1E293B] pl-9 pr-4 py-1.5 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:border-[#7C3AED] text-white placeholder-[#94A3B8]/50"
                 />
               </div>
 
-              {/* Upper status summary widgets */}
+              {/* Upper status metrics row */}
               <div className="flex items-center gap-4">
-                <div className="hidden sm:flex items-center gap-2 bg-indigo-500/5 px-3 py-1.5 rounded-lg border border-indigo-500/10 select-none text-xs font-mono">
-                  <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping"></span>
-                  <span className="text-neutral-550">Consistency Metric: <strong className="text-indigo-600 dark:text-indigo-400">{profile.consistencyScore}%</strong></span>
+                <button 
+                  onClick={handleUpdateStreak}
+                  title="Force increase active streak counter!"
+                  className="flex items-center gap-1.5 py-1 px-2.5 bg-[#1A2234] hover:bg-[#1E293B] text-orange-400 border border-white/5 rounded-lg text-xs font-bold font-mono transition cursor-pointer"
+                >
+                  <Flame className="w-3.5 h-3.5 fill-current shrink-0" />
+                  <span>{profile.streak} Days</span>
+                </button>
+
+                <div className="text-xs font-bold py-1 px-2.5 rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-amber-500/20 text-amber-400 font-mono">
+                  <span>🏆</span>
+                  <span>{profile.xp} XP</span>
                 </div>
 
-                <div className="text-xs font-bold border border-neutral-200 dark:border-neutral-800 px-3 py-1.5 rounded-lg flex items-center gap-1 bg-yellow-500/5">
-                  <span className="text-yellow-500">🏆</span>
-                  <span className="text-neutral-700 dark:text-neutral-300 font-mono">{profile.xp} XP</span>
+                {/* Notifications trigger */}
+                <div className="relative select-none">
+                  <button 
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="p-1.5 bg-[#1A2234] opacity-80 hover:opacity-100 transition rounded-lg text-[#94A3B8] cursor-pointer"
+                  >
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#EF4444] rounded-full border border-[#0A0F1C]"></span>
+                    <Clock className="w-4 h-4" />
+                  </button>
+
+                  <AnimatePresence>
+                    {showNotifications && (
+                      <div className="absolute right-0 mt-3 w-72 bg-[#1A2234] border border-[#1E293B] rounded-2xl shadow-2xl p-4 space-y-3 z-[1000] text-left">
+                        <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                          <span className="text-[9px] font-mono font-bold text-[#06B6D4] uppercase tracking-wider">NOTIFICATIONS</span>
+                          <button onClick={() => setShowNotifications(false)} className="text-[10px] text-gray-500 hover:text-white">Dismiss</button>
+                        </div>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {mockNotifications.map(n => (
+                            <div key={n.id} className="p-2 bg-[#111827] rounded-lg border border-white/5 text-[10px] leading-relaxed">
+                              <p className="text-white font-medium">{n.text}</p>
+                              <span className="text-[8px] text-[#94A3B8]/60 font-mono block mt-0.5">{n.time}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex items-center gap-2 border-l border-[#1E293B] pl-4">
+                  <div 
+                    onClick={() => setActiveTab('growth')}
+                    className="w-7 h-7 rounded-lg bg-indigo-950 text-[#06B6D4] font-black font-mono text-xs cursor-pointer flex items-center justify-center border border-white/10 active:scale-95 transition"
+                  >
+                    {profile.username.substring(0, 1).toUpperCase()}
+                  </div>
                 </div>
               </div>
             </header>
@@ -879,7 +920,23 @@ export default function App() {
 
             </div>
           </main>
-        </>
+        </div>
+      )}
+
+      {/* PERSISTENT PORTAL DRAWER OVERLAYS */}
+      {profile && (
+        <PortalOverlays
+          profile={profile}
+          SECTIONS={SECTIONS}
+          showBookmarks={showBookmarks}
+          setShowBookmarks={setShowBookmarks}
+          showNotes={showNotes}
+          setShowNotes={setShowNotes}
+          showCertificates={showCertificates}
+          setShowCertificates={setShowCertificates}
+          onSelectTopic={(topic) => setSelectedTopic(topic)}
+          setActiveTab={setActiveTab}
+        />
       )}
 
       {/* Dynamic Level Up Popup Modal Screen Overlay */}
